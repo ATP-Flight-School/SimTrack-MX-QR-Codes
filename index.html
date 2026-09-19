@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script>
+    // 1. Check for the secret key in the URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const passkey = urlParams.get('key');
+    
+    // 2. Block access if key is missing or incorrect
+    if (passkey !== "SIMTRACK2026") {
+      document.write("<h1 style='font-family:sans-serif; text-align:center; margin-top:50px;'>404 Not Found</h1><p style='font-family:sans-serif; text-align:center;'>The requested URL was not found on this server.</p>");
+      window.stop();
+    }
+  </script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SimTrack Discrepancy Report</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 15px; max-width: 420px; margin: auto; background-color: #f8f9fa; }
+    .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    h2 { margin-top: 0; color: #333; }
+    
+    .notice { background-color: #fff3cd; border-left: 4px solid #ffc107; color: #856404; padding: 12px; margin-bottom: 15px; border-radius: 4px; font-size: 14px; line-height: 1.4; }
+    .action-instruction { background-color: #e7f3fe; border-left: 4px solid #007bff; color: #0c5460; padding: 10px 12px; margin-top: 8px; border-radius: 4px; font-size: 13px; line-height: 1.4; }
+    
+    .guide-box { background-color: #f1f3f5; border: 1px solid #dee2e6; padding: 10px; border-radius: 6px; font-size: 13px; color: #495057; margin-top: 6px; }
+    .guide-box ul { margin: 5px 0 0 18px; padding: 0; }
+    .guide-box li { margin-bottom: 3px; }
+    
+    label { display: block; margin-top: 15px; font-weight: bold; color: #333; }
+    select, textarea { width: 100%; padding: 12px; margin-top: 5px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 6px; font-size: 15px; }
+    
+    .hidden { display: none; }
+    
+    button { width: 100%; padding: 15px; margin-top: 20px; background-color: #007bff; color: white; border: none; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; }
+    button:active { background-color: #0056b3; }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <h2>SimTrack</h2>
+
+    <div class="notice">
+      <strong>Important Instructions:</strong>
+      <ol style="margin: 5px 0 0 18px; padding: 0;">
+        <li>Select your desired function from the menu below.</li>
+        <li>Tapping "Generate SMS" opens your phone's Messages app. <strong>You must tap Send (arrow/paper airplane icon) inside your text app to send the message.</strong></li>
+        <li><strong>A reply from SimTrack must be received.</strong> If verification is not received, the message was not submitted.</li>
+      </ol>
+    </div>
+
+    <form id="discrepancyForm">
+      <!-- Hidden container that only displays if no sim parameter is provided -->
+      <div id="simSelectContainer" class="hidden">
+        <label for="simId">Select Simulator</label>
+        <select id="simId">
+          <option value="">Select Simulator...</option>
+          <option value="F321">F321 - C172 Frasca</option>
+          <option value="F351">F351 - A320 FTD #2</option>
+          <option value="F425">F425 - B737 FTD #2</option>
+          <option value="F359">F359 - A320 FTD #3</option>
+          <option value="F360">F360 - A320 FTD #4</option>
+          <option value="F364">F364 - A320 FTD #5</option>
+          <option value="F365">F365 - A320 FTD #6</option>
+          <option value="F424">F424 - B737 FTD #1</option>
+          <option value="F40">F40 - CRJ FTD #1</option>
+          <option value="F41">F41 - CRJ FTD #2</option>
+          <option value="F260">F260 - CRJ FTD #5</option>
+          <option value="F352">F352 - PA28 Frasca Archer</option>
+        </select>
+      </div>
+
+      <!-- Action Menu Dropdown -->
+      <label for="actionType">Select Action</label>
+      <select id="actionType" onchange="updateActionUI()">
+        <option value="STATUS" selected>1. Check Status</option>
+        <option value="PF">2. Record Preflight</option>
+        <option value="MX">3. Report Maintenance Issue</option>
+      </select>
+
+      <!-- Dynamic Action Instruction Box -->
+      <div id="actionInstruction" class="action-instruction">
+        Prepares a text message to check the current operational status of this simulator.
+      </div>
+
+      <!-- Description Section (Only shown for Maintenance Issues) -->
+      <div id="descriptionContainer" class="hidden">
+        <label for="details">Description of Issue</label>
+        <div class="guide-box">
+          Please include troubleshooting details:
+          <ul>
+            <li>Specific unit/component non-functional</li>
+            <li>What was being performed when it occurred</li>
+            <li>Observed symptoms or fault codes</li>
+          </ul>
+        </div>
+        <textarea id="details" rows="5" placeholder="Example: Visual display flickered and cut out on left side while flying ILS approach to 18L..."></textarea>
+      </div>
+
+      <button type="button" onclick="sendSMS()">Generate SMS</button>
+    </form>
+  </div>
+
+  <script>
+    // Read URL parameters
+    const simParam = urlParams.get('sim');
+    const simSelectContainer = document.getElementById('simSelectContainer');
+
+    // Show manual dropdown if no sim parameter exists in URL
+    if (!simParam) {
+      simSelectContainer.classList.remove('hidden');
+    }
+
+    // Update instruction box and show/hide description field dynamically
+    function updateActionUI() {
+      const action = document.getElementById('actionType').value;
+      const descContainer = document.getElementById('descriptionContainer');
+      const actionInstruction = document.getElementById('actionInstruction');
+      
+      if (action === 'STATUS') {
+        actionInstruction.innerHTML = "Prepares a text message to check the current operational status of this simulator.";
+        descContainer.classList.add('hidden');
+      } else if (action === 'PF') {
+        actionInstruction.innerHTML = "Prepares a text message to log a completed preflight inspection for this simulator in SimTrack.";
+        descContainer.classList.add('hidden');
+      } else if (action === 'MX') {
+        actionInstruction.innerHTML = "Prepares a text message to submit a new maintenance discrepancy report to SimTrack. Detailed issue description required below.";
+        descContainer.classList.remove('hidden');
+      }
+    }
+
+    function sendSMS() {
+      // Replace with your target SimTrack incoming phone number
+      const simTrackNumber = "+15550199000"; 
+
+      const simId = simParam ? simParam : document.getElementById('simId').value;
+      const action = document.getElementById('actionType').value;
+      const details = document.getElementById('details').value;
+
+      if (!simId) {
+        alert("Simulator ID is missing. Please select a simulator.");
+        return;
+      }
+
+      let messageBody = "";
+
+      // Format SMS body strictly to match expected commands
+      if (action === "STATUS") {
+        messageBody = `${simId}`;
+      } else if (action === "PF") {
+        messageBody = `${simId} PF Log`;
+      } else if (action === "MX") {
+        if (!details.trim()) {
+          alert("Please enter a description of the maintenance issue.");
+          return;
+        }
+        messageBody = `${simId} MX ${details}`;
+      }
+
+      // Handle OS-specific syntax for SMS query parameters
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+      const separator = isIOS ? '&' : '?';
+
+      // Build URI and trigger mobile messaging app
+      const smsURI = `sms:${simTrackNumber}${separator}body=${encodeURIComponent(messageBody)}`;
+      window.location.href = smsURI;
+    }
+  </script>
+
+</body>
+</html>
