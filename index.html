@@ -2,11 +2,10 @@
 <html lang="en">
 <head>
   <script>
-    // 1. Check for the secret key in the URL
+    // 1. Secret key validation
     const urlParams = new URLSearchParams(window.location.search);
     const passkey = urlParams.get('key');
     
-    // 2. Block access if key is missing or incorrect
     if (passkey !== "SIMTRACK2026") {
       document.write("<h1 style='font-family:sans-serif; text-align:center; margin-top:50px;'>404 Not Found</h1><p style='font-family:sans-serif; text-align:center;'>The requested URL was not found on this server.</p>");
       window.stop();
@@ -31,10 +30,16 @@
     label { display: block; margin-top: 15px; font-weight: bold; color: #333; }
     select, textarea { width: 100%; padding: 12px; margin-top: 5px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 6px; font-size: 15px; }
     
+    /* Checkbox Container Styling */
+    .checkbox-container { display: flex; align-items: flex-start; margin-top: 15px; background: #f8d7da; border: 1px solid #f5c6cb; padding: 12px; border-radius: 6px; }
+    .checkbox-container input { width: 20px; height: 20px; margin-right: 10px; margin-top: 2px; flex-shrink: 0; cursor: pointer; }
+    .checkbox-container label { margin-top: 0; font-weight: normal; font-size: 13px; color: #721c24; cursor: pointer; line-height: 1.3; }
+
     .hidden { display: none; }
     
     button { width: 100%; padding: 15px; margin-top: 20px; background-color: #007bff; color: white; border: none; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; }
-    button:active { background-color: #0056b3; }
+    button:disabled { background-color: #adb5bd; cursor: not-allowed; }
+    button:active:not(:disabled) { background-color: #0056b3; }
   </style>
 </head>
 <body>
@@ -52,7 +57,7 @@
     </div>
 
     <form id="discrepancyForm">
-      <!-- Hidden container that only displays if no sim parameter is provided -->
+      <!-- Fallback Simulator Select -->
       <div id="simSelectContainer" class="hidden">
         <label for="simId">Select Simulator</label>
         <select id="simId">
@@ -85,7 +90,7 @@
         Prepares a text message to check the current operational status of this simulator.
       </div>
 
-      <!-- Description Section (Only shown for Maintenance Issues) -->
+      <!-- Description & Verification Section (Only shown for Maintenance Issues) -->
       <div id="descriptionContainer" class="hidden">
         <label for="details">Description of Issue</label>
         <div class="guide-box">
@@ -97,42 +102,58 @@
           </ul>
         </div>
         <textarea id="details" rows="5" placeholder="Example: Visual display flickered and cut out on left side while flying ILS approach to 18L..."></textarea>
+
+        <!-- Mandatory Verification Checkbox -->
+        <div class="checkbox-container">
+          <input type="checkbox" id="verifyStatusCheck" onchange="toggleSubmitButton()">
+          <label for="verifyStatusCheck">
+            <strong>Duplicate Check:</strong> I have verified via SimTrack status that this discrepancy is not already reported.
+          </label>
+        </div>
       </div>
 
-      <button type="button" onclick="sendSMS()">Generate SMS</button>
+      <button type="button" id="submitBtn" onclick="sendSMS()">Generate SMS</button>
     </form>
   </div>
 
   <script>
-    // Read URL parameters
     const simParam = urlParams.get('sim');
     const simSelectContainer = document.getElementById('simSelectContainer');
 
-    // Show manual dropdown if no sim parameter exists in URL
     if (!simParam) {
       simSelectContainer.classList.remove('hidden');
     }
 
-    // Update instruction box and show/hide description field dynamically
     function updateActionUI() {
       const action = document.getElementById('actionType').value;
       const descContainer = document.getElementById('descriptionContainer');
       const actionInstruction = document.getElementById('actionInstruction');
+      const submitBtn = document.getElementById('submitBtn');
+      const checkbox = document.getElementById('verifyStatusCheck');
       
       if (action === 'STATUS') {
         actionInstruction.innerHTML = "Prepares a text message to check the current operational status of this simulator.";
         descContainer.classList.add('hidden');
+        submitBtn.disabled = false; // Always enabled for status check
       } else if (action === 'PF') {
         actionInstruction.innerHTML = "Prepares a text message to log a completed preflight inspection for this simulator in SimTrack.";
         descContainer.classList.add('hidden');
+        submitBtn.disabled = false; // Always enabled for preflight
       } else if (action === 'MX') {
         actionInstruction.innerHTML = "Prepares a text message to submit a new maintenance discrepancy report to SimTrack. Detailed issue description required below.";
         descContainer.classList.remove('hidden');
+        checkbox.checked = false; // Reset checkbox
+        submitBtn.disabled = true; // Disabled until checkbox is checked
       }
     }
 
+    function toggleSubmitButton() {
+      const checkbox = document.getElementById('verifyStatusCheck');
+      const submitBtn = document.getElementById('submitBtn');
+      submitBtn.disabled = !checkbox.checked;
+    }
+
     function sendSMS() {
-      // Replace with your target SimTrack incoming phone number
       const simTrackNumber = "+15550199000"; 
 
       const simId = simParam ? simParam : document.getElementById('simId').value;
@@ -146,7 +167,6 @@
 
       let messageBody = "";
 
-      // Format SMS body strictly to match expected commands
       if (action === "STATUS") {
         messageBody = `${simId}`;
       } else if (action === "PF") {
@@ -159,11 +179,9 @@
         messageBody = `${simId} MX ${details}`;
       }
 
-      // Handle OS-specific syntax for SMS query parameters
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
       const separator = isIOS ? '&' : '?';
 
-      // Build URI and trigger mobile messaging app
       const smsURI = `sms:${simTrackNumber}${separator}body=${encodeURIComponent(messageBody)}`;
       window.location.href = smsURI;
     }
