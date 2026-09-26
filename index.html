@@ -94,7 +94,9 @@
       <div id="descriptionContainer" class="hidden">
         <label for="details">Description of Issue</label>
         <div class="guide-box">
-          Please include troubleshooting details:
+          <strong>Note:</strong> Please submit a <strong>separate report for each issue</strong>. Do not combine multiple issues into one report.
+          <hr style="border:0; border-top:1px solid #dee2e6; margin:8px 0;">
+          Include troubleshooting details:
           <ul>
             <li>Specific unit/component non-functional</li>
             <li>What was being performed when it occurred</li>
@@ -134,16 +136,16 @@
       if (action === 'STATUS') {
         actionInstruction.innerHTML = "Prepares a text message to check the current operational status of this simulator.";
         descContainer.classList.add('hidden');
-        submitBtn.disabled = false; // Always enabled for status check
+        submitBtn.disabled = false;
       } else if (action === 'PF') {
         actionInstruction.innerHTML = "Prepares a text message to log a completed preflight inspection for this simulator in SimTrack.";
         descContainer.classList.add('hidden');
-        submitBtn.disabled = false; // Always enabled for preflight
+        submitBtn.disabled = false;
       } else if (action === 'MX') {
         actionInstruction.innerHTML = "Prepares a text message to submit a new maintenance discrepancy report to SimTrack. Detailed issue description required below.";
         descContainer.classList.remove('hidden');
-        checkbox.checked = false; // Reset checkbox
-        submitBtn.disabled = true; // Disabled until checkbox is checked
+        checkbox.checked = false;
+        submitBtn.disabled = true;
       }
     }
 
@@ -154,7 +156,7 @@
     }
 
     function sendSMS() {
-      const simTrackNumber = "+12143840515"; 
+      const simTrackNumber = "+15550199000"; 
 
       const simId = simParam ? simParam : document.getElementById('simId').value;
       const action = document.getElementById('actionType').value;
