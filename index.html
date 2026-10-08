@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <script>
-    // 1. Secret key validation
+    // Secret key validation
     const urlParams = new URLSearchParams(window.location.search);
     const passkey = urlParams.get('key');
     
@@ -30,7 +30,6 @@
     label { display: block; margin-top: 15px; font-weight: bold; color: #333; }
     select, textarea { width: 100%; padding: 12px; margin-top: 5px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 6px; font-size: 15px; }
     
-    /* Checkbox Container Styling */
     .checkbox-container { display: flex; align-items: flex-start; margin-top: 15px; background: #f8d7da; border: 1px solid #f5c6cb; padding: 12px; border-radius: 6px; }
     .checkbox-container input { width: 20px; height: 20px; margin-right: 10px; margin-top: 2px; flex-shrink: 0; cursor: pointer; }
     .checkbox-container label { margin-top: 0; font-weight: normal; font-size: 13px; color: #721c24; cursor: pointer; line-height: 1.3; }
@@ -57,32 +56,12 @@
     </div>
 
     <form id="discrepancyForm">
-      <!-- Fallback Simulator Select -->
-      <div id="simSelectContainer" class="hidden">
-        <label for="simId">Select Simulator</label>
-        <select id="simId">
-          <option value="">Select Simulator...</option>
-          <option value="F321">F321 - C172 Frasca</option>
-          <option value="F351">F351 - A320 FTD #2</option>
-          <option value="F425">F425 - B737 FTD #2</option>
-          <option value="F359">F359 - A320 FTD #3</option>
-          <option value="F360">F360 - A320 FTD #4</option>
-          <option value="F364">F364 - A320 FTD #5</option>
-          <option value="F365">F365 - A320 FTD #6</option>
-          <option value="F424">F424 - B737 FTD #1</option>
-          <option value="F40">F40 - CRJ FTD #1</option>
-          <option value="F41">F41 - CRJ FTD #2</option>
-          <option value="F260">F260 - CRJ FTD #5</option>
-          <option value="F352">F352 - PA28 Frasca Archer</option>
-        </select>
-      </div>
-
       <!-- Action Menu Dropdown -->
       <label for="actionType">Select Action</label>
       <select id="actionType" onchange="updateActionUI()">
         <option value="STATUS" selected>1. Check Status</option>
-        <option value="PF">2. Record Preflight</option>
-        <option value="MX">3. Report Maintenance Issue</option>
+        <option value="PF" id="pfOption">2. Record Preflight</option>
+        <option value="MX" id="mxOption">3. Report Maintenance Issue</option>
       </select>
 
       <!-- Dynamic Action Instruction Box -->
@@ -120,10 +99,14 @@
 
   <script>
     const simParam = urlParams.get('sim');
-    const simSelectContainer = document.getElementById('simSelectContainer');
+    const sponsoredParam = urlParams.get('sponsored');
+    const pfOption = document.getElementById('pfOption');
+    const mxOption = document.getElementById('mxOption');
 
-    if (!simParam) {
-      simSelectContainer.classList.remove('hidden');
+    // If sponsored=false, remove Option 2 and renumber Option 3 to Option 2
+    if (sponsoredParam === 'false') {
+      if (pfOption) pfOption.remove();
+      if (mxOption) mxOption.textContent = "2. Report Maintenance Issue";
     }
 
     function updateActionUI() {
@@ -156,29 +139,28 @@
     }
 
     function sendSMS() {
-      const simTrackNumber = "+14134613273"; 
+      const simTrackNumber = "+15550199000"; 
 
-      const simId = simParam ? simParam : document.getElementById('simId').value;
-      const action = document.getElementById('actionType').value;
-      const details = document.getElementById('details').value;
-
-      if (!simId) {
-        alert("Simulator ID is missing. Please select a simulator.");
+      if (!simParam) {
+        alert("Simulator ID is missing from URL parameter (&sim=Fxxx).");
         return;
       }
+
+      const action = document.getElementById('actionType').value;
+      const details = document.getElementById('details').value;
 
       let messageBody = "";
 
       if (action === "STATUS") {
-        messageBody = `${simId}`;
+        messageBody = `${simParam}`;
       } else if (action === "PF") {
-        messageBody = `${simId} PF Log`;
+        messageBody = `${simParam} PF Log`;
       } else if (action === "MX") {
         if (!details.trim()) {
           alert("Please enter a description of the maintenance issue.");
           return;
         }
-        messageBody = `${simId} MX ${details}`;
+        messageBody = `${simParam} MX ${details}`;
       }
 
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
